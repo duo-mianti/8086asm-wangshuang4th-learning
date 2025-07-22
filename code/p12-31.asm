@@ -1,12 +1,25 @@
+; 修改自p12-9.asm
+; 实验16
 assume cs:code
 
 code segment
 start:
-    ; 要调用的子程序
-    mov ah, 0
-    ; 颜色
-    mov al, 2
-    call setscreen
+    mov ax, cs
+    mov ds, ax
+    mov si, offset setscreen
+    mov ax, 0
+    mov es, ax
+    mov di, 200h
+    mov cx, offset screenend - offset setscreen
+    cld
+    rep movsb
+
+    mov ax, 0
+    mov es, ax
+    cli
+    mov word ptr es:[7ch*4], 200h
+    mov word ptr es:[7ch*4+2], 0
+    sti
 
     mov ax, 4c00h
     int 21h
@@ -14,7 +27,10 @@ start:
 setscreen:
     jmp short set
     ; 直接定址表
-    table dw sub1, sub2, sub3, sub4
+    table dw sub1 - offset setscreen + 200h
+          dw sub2 - offset setscreen + 200h
+          dw sub3 - offset setscreen + 200h
+          dw sub4 - offset setscreen + 200h
     set:
         push bx
         ; 只能调用0~3号这4个子程序
@@ -24,10 +40,10 @@ setscreen:
         ; 修改字符ASCII码
         mov bh, 0
         add bx, bx
-        call word ptr table[bx]
+        call word ptr cs:[bx+202h]
     sret:
         pop bx
-        ret
+        iret
 
 sub1:
     push bx
@@ -119,6 +135,8 @@ sub4:
     pop si
     pop cx
     ret
+screenend:
+    nop
 code ends
 
 end start
